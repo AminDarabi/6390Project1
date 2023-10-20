@@ -9,36 +9,12 @@ import pandas as pd
 import numpy as np
 
 
-def data_split(
-        file: str = 'data/train.csv',
-        split_ratio: float = 0.85) -> (pd.DataFrame, pd.DataFrame):
-    """
-    Split the data into train and validation sets.
-
-    Parameters
-    ----------
-    file : str
-        Path to the data file.
-    split_ratio : float
-        Ratio of train set to the whole data.
-
-    Returns
-    -------
-    Tuple[np.ndarray, np.ndarray]
-        Train and validation sets.
-    """
-    data = pd.read_csv(file, index_col='Sno')
-    data = data.sample(frac=1).reset_index(drop=True)
-    train = data[:int(split_ratio*len(data))]
-    validation = data[int(split_ratio*len(data)):]
-    return train, validation
-
-
 def pre_process(
         train: pd.DataFrame | str = 'data/train.csv',
-        test: pd.DataFrame | str = 'data/test.csv',
+        test: pd.DataFrame | str = None,
+        validation: pd.DataFrame = None,
         oversampling: bool = True
-        ) -> (pd.DataFrame, pd.DataFrame):
+        ) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
     """
     Pre-process the data.
 
@@ -48,13 +24,15 @@ def pre_process(
         Train set.
     test : pd.DataFrame
         Test set.
+    validation : pd.DataFrame
+        Validation set.
     oversampling : bool
         Whether to oversampling the train set or not.
 
     Returns
     -------
-    Tuple[pd.DataFrame, pd.DataFrame]
-        Pre-processed train and test sets.
+    Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]
+        Pre-processed train, test and validation sets.
     """
 
     if isinstance(train, str):
@@ -64,11 +42,17 @@ def pre_process(
         test = pd.read_csv(test, index_col=0)
 
     if test is not None:
+        test = test.copy()
         test['Label'] = -1
         test.index += 10000000
         data = pd.concat([train, test])
     else:
-        data = train
+        data = train.copy()
+
+    if validation is not None:
+        validation = validation.copy()
+        validation.index += 20000000
+        data = pd.concat([data, validation])
 
     # modifying time in data
     data['time'] = data['time'].astype('str')
@@ -93,7 +77,7 @@ def pre_process(
     data['T200'] = (data['T200'] - data['T200'].mean()) / data['T200'].std()
     data['T500'] = (data['T500'] - data['T500'].mean()) / data['T500'].std()
     data['TS'] = (data['TS'] - data['TS'].mean()) / data['TS'].std()
-    data['TREFHT'] = \
+    data['TREFHT'] =\
         (data['TREFHT'] - data['TREFHT'].mean()) / data['TREFHT'].std()
 
     # modifying precipitable water in data
@@ -118,7 +102,7 @@ def pre_process(
     data['VBOT'] = data['VBOT'].apply(lambda x: x if x > 0 else 0)
 
     # modifying humidity in data
-    data['QREFHT'] = \
+    data['QREFHT'] =\
         (data['QREFHT'] - data['QREFHT'].mean()) / data['QREFHT'].std()
 
     # modifying pressure in data
@@ -127,21 +111,21 @@ def pre_process(
 
     # modifying precipitation rate in data
     # FIXME: need a double check
-    data['PRECT'] = \
+    data['PRECT'] =\
         (data['PRECT'] - data['PRECT'].mean()) / data['PRECT'].std()
 
     # modifying geopotential height in data
-    data['Z1000'] = \
+    data['Z1000'] =\
         (data['Z1000'] - data['Z1000'].mean()) / data['Z1000'].std()
     data['Z200'] = (data['Z200'] - data['Z200'].mean()) / data['Z200'].std()
     data['ZBOT'] = (data['ZBOT'] - data['ZBOT'].mean()) / data['ZBOT'].std()
 
-    data[list(set(data.columns) - {'Label'})] = \
+    data[list(set(data.columns) - {'Label'})] =\
         data[list(set(data.columns) - {'Label'})].astype('float32')
     data['Label'] = data['Label'].astype('int8')
     data = data[list(set(data.columns) - {'Label'}) + ['Label']]
 
-    train = data[data['Label'] != -1]
+    train = data[data.index < 10000000]
     if oversampling:
         # FIXME: need a double check because of imbalanced duplicates
         train0 = train[train['Label'] == 0]
@@ -152,11 +136,16 @@ def pre_process(
         train = pd.concat([train0, train1, train2]).sample(frac=1)\
             .reset_index(drop=True)
 
-    test = data[data['Label'] == -1]
-    test = test.drop(columns=['Label'])
-    test.index -= 10000000
+    if validation is not None:
+        validation = data[data.index >= 20000000]
+        validation.index -= 20000000
 
-    return train, test
+    if test is not None:
+        test = data[data['Label'] == -1]
+        test = test.drop(columns=['Label'])
+        test.index -= 10000000
+
+    return train, test, validation
 
 
 class LogisticRegression:
@@ -404,21 +393,144 @@ class LogisticRegression:
         )
 
 
+def select_hyperparameters(
+        model_class: type(LogisticRegression),
+        train: pd.DataFrame | str = 'data/train.csv',
+        learning_rates: list = None,
+        regularization_rates: list = None,
+        validation_ratio: float = 0.1,
+        shuffle: bool = False,
+        print_loss: bool = True,
+        epochs: int = 1000,
+        oversampling: bool = True) -> (float, float, int):
+    """
+    Select the best learning rate, regularization rate, and epoch.
+
+    Parameters
+    ----------
+    model_class : class
+        model_class to train.
+    train : pd.DataFrame | str
+        Train data.
+    learning_rates : list
+        List of learning rates to try.
+    regularization_rates : list
+        List of regularization rates to try.
+    validation_ratio : float
+        ratio of validation data to the train data.
+    shuffle : bool
+        Whether to shuffle the data or not.
+    print_loss : bool
+        Whether to print loss and accuracy during training or not.
+    epochs : int
+        Number of epochs to train the model.
+    oversampling : bool
+        Whether to oversampling the train set or not.
+
+    Returns
+    -------
+    Tuple[float, float, int]
+        Best learning rate, regularization rate, and epoch.
+
+    Raises
+    ------
+    TypeError
+        If train is not a pandas DataFrame or str.
+    """
+
+    if isinstance(train, str):
+        train = pd.read_csv(train, index_col=0)
+    if not isinstance(train, pd.DataFrame):
+        raise TypeError("train must be a pandas DataFrame or str")
+
+    if learning_rates is None:
+        learning_rates = [0.1, 0.05, 0.02, 0.01, 0.005, 0.002]
+    if regularization_rates is None:
+        regularization_rates = [0.2, 0.1, 0.05, 0.02, 0.01, 0.005]
+
+    if shuffle:
+        train = train.sample(frac=1).reset_index(drop=True)
+
+    train, validation, *_ = np.split(
+        train, [int((1 - validation_ratio) * len(train))], axis=0)
+
+    train, _, validation = pre_process(train, None, validation, oversampling)
+
+    train_x = np.array(
+        train[list(set(train.columns) - {'Label'})], dtype='float32')
+    train_y = np.array(train['Label'], dtype='int8')
+    train_y = (train_y == np.unique(train_y)[:, None]).T
+
+    validation_x = np.array(
+        validation[list(set(validation.columns) - {'Label'})], dtype='float32')
+    validation_y = np.array(validation['Label'], dtype='int8')
+    validation_y = (validation_y == np.unique(validation_y)[:, None]).T
+
+    best_accuracy = -1
+    learning_rate = regularization = epoch = None
+
+    for lr in learning_rates:
+        for rg in regularization_rates:
+
+            model = model_class(
+                train_x.shape[1], train_y.shape[1], lr, rg)
+            train_loss, _, train_accuracy, validation_accuracy = model.fit(
+                train_x, train_y, False, validation_x,  validation_y,
+                epochs=epochs)
+
+            ind = np.argmax(validation_accuracy)
+            if validation_accuracy[ind] > best_accuracy:
+                learning_rate = lr
+                regularization = rg
+                epoch = ind + 1
+                best_accuracy = validation_accuracy[ind]
+
+            if print_loss:
+                print("======================================================")
+                print(f"Learning rate: {lr},\tRegularization: {rg}")
+                print(f"best validation accuracy occurred in epoch {ind + 1}")
+                print(
+                    f"Train accuracy: {train_accuracy[ind]}\t"
+                    f"Train loss: {train_loss[ind]}")
+                print(f"Validation accuracy: {validation_accuracy[ind]}")
+                print(f"best validation accuracy: {best_accuracy}")
+                print("======================================================")
+
+    if print_loss:
+        print(f"best learning rate: {learning_rate}")
+        print(f"best regularization rate: {regularization}")
+        print(f"best epoch: {epoch}")
+        print(f"best validation accuracy: {best_accuracy}")
+
+    return learning_rate, regularization, epoch
+
+
 def main(args):
     """
     Main function.
     """
 
-    train, test = pre_process(
-        args.train_data,
-        args.test_data,
-        not args.not_oversampling
-    )
+    if args.hyperparameter_tuning:
+        args.learning_rate, args.regularization, args.epochs =\
+            select_hyperparameters(
+                LogisticRegression,
+                args.train_data,
+                validation_ratio=args.validation_ratio,
+                shuffle=args.shuffle,
+                print_loss=args.print_loss,
+                epochs=args.epochs,
+                oversampling=args.not_oversampling
+            )
 
+    train = pd.read_csv(args.train_data, index_col=0)
+    test = pd.read_csv(args.test_data, index_col=0)
+
+    if args.shuffle:
+        train = train.sample(frac=1).reset_index(drop=True)
+
+    train, test, _ = pre_process(train, test, None, args.not_oversampling)
     train_x = np.array(
-        train[list(set(train.columns) - {'Label'})],
-        dtype='float32'
-    )
+        train[list(set(train.columns) - {'Label'})], dtype='float32')
     train_y = np.array(train['Label'], dtype='int8')
     train_y = (train_y == np.unique(train_y)[:, None]).T
 
@@ -444,18 +556,25 @@ if __name__ == '__main__':
                     "for IFT6390B Data Competition. "
                     "Developed by: Amin Darabi october 2023."
     )
-    parser.add_argument('train_data', type=str, help='Path to the train data')
-    parser.add_argument('test_data', type=str, help='Path to the test data')
+    parser.add_argument('train_data', type=str, help="Path to the train data")
+    parser.add_argument('test_data', type=str, help="Path to the test data")
     parser.add_argument('-o', '--output', type=str, default='output.csv',
-                        help='Path to the output file')
+                        help="Path to the output file")
     parser.add_argument('-lr', '--learning_rate', type=float, default=0.01,
-                        help='Learning rate')
+                        help="Learning rate")
     parser.add_argument('-rg', '--regularization', type=float, default=0.1,
-                        help='Regularization')
+                        help="Regularization rate")
     parser.add_argument('-e', '--epochs', type=int, default=1000,
                         help='Number of epochs')
     parser.add_argument('-p', '--print_loss', action='store_true',
-                        help='Print loss and accuracy during training')
+                        help="Print loss and accuracy during training")
     parser.add_argument('--not_oversampling', action='store_false',
-                        help='Do not over-sample the train data')
+                        help="Do not over-sample the train data")
+    parser.add_argument('-hps', '--hyperparameter_tuning', action='store_true',
+                        help="Select learning rate and regularization rate "
+                        "automatically")
+    parser.add_argument('--validation_ratio', type=float, default=0.1,
+                        help="Ratio of validation data to the train data")
+    parser.add_argument('--shuffle', action='store_true',
+                        help="Shuffle the train set [before splitting]")
     main(parser.parse_args())
