@@ -5,4 +5,4 @@ __pycache__/*
 .venv/*
 .vscode/*
 result/*
-./test.py
+./_test.py
