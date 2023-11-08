@@ -548,8 +548,8 @@ def main(args):
             args.train_data, False, year_include=[2006, 2007, 2008, 2009])
 
         regularization_rates = [0.1, 0.2, 0.5, 1.0, 2.0]
-        max_epochs = [200, 500, 1000]
-        best_acc = -1
+        max_epochs = [200, 400, 800]
+        best_loss = 1000000.0
 
         for rg in regularization_rates:
             for ep in max_epochs:
@@ -566,8 +566,8 @@ def main(args):
                 valid_loss, valid_accuracy = model.validate(
                     validation_x, validation_y)
 
-                if valid_accuracy > best_acc:
-                    best_acc = valid_accuracy
+                if valid_loss < best_loss:
+                    best_loss = valid_loss
                     args.regularization = rg
                     args.epochs = ep
 
@@ -588,7 +588,7 @@ def main(args):
             print(
                 f"best regularization rate: {args.regularization}\t"
                 f"best epoch: {args.epochs}")
-            print(f"best validation loss: {best_acc}")
+            print(f"best validation loss: {best_loss}")
             print('=' * 60)
 
     if args.validate:
@@ -646,9 +646,9 @@ if __name__ == '__main__':
                         help="Validate the model")
     parser.add_argument('-o', '--output', type=str, default='output.csv',
                         help="Path to the output file")
-    parser.add_argument('-rg', '--regularization', type=float, default=1,
+    parser.add_argument('-rg', '--regularization', type=float, default=0.2,
                         help="Regularization rate")
-    parser.add_argument('-ep', '--epochs', type=int, default=500,
+    parser.add_argument('-ep', '--epochs', type=int, default=400,
                         help='Number of epochs')
     parser.add_argument('-p', '--print', action='store_true',
                         help="Print loss and accuracy during training and hps")

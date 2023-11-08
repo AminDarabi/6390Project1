@@ -108,11 +108,11 @@ def main(args):
 
         alphas = [0.0001, 0.001, 0.01, 0.1]
         layers = [
-            (2,), (3,), (4,), (5,), (6,), (8,), (16,),
-            (3, 2), (4, 2), (6, 2), (8, 4), (4, 4), (4, 3),
-            (4, 4, 2)
+            (2,), (3,), (4,), (6,), (8,),
+            (2, 2), (3, 2), (3, 3),
+            (4, 2), (4, 3), (4, 4),
         ]
-        best_acc = -1
+        best_loss = 1000000.0
 
         for alpha in alphas:
             for layer in layers:
@@ -132,8 +132,8 @@ def main(args):
                     validation_y, model.predict_proba(validation_x))
                 valid_accuracy = model.score(validation_x, validation_y)
 
-                if valid_accuracy > best_acc:
-                    best_acc = valid_accuracy
+                if valid_loss < best_loss:
+                    best_loss = valid_loss
                     args.alpha = alpha
                     args.layers = layer
 
@@ -154,7 +154,7 @@ def main(args):
             print(
                 f"best regularization rate: {args.alpha}\t"
                 f"best layer size: {args.layers}")
-            print(f"best validation accuracy: {best_acc}")
+            print(f"best validation loss: {best_loss}")
             print('=' * 60)
 
     if args.validate:
@@ -210,9 +210,9 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        prog='Logistic Regression Classifier',
-        description="Logistic Regression Classifier."
-                    "This program is written as a baseline method "
+        prog='MLP Classifier',
+        description="Multi-layer Perceptron Classifier."
+                    "This program is written as a second method "
                     "for IFT6390B Data Competition. "
                     "Developed by: Amin Darabi october 2023."
     )
@@ -222,7 +222,7 @@ if __name__ == '__main__':
                         help="Validate the model")
     parser.add_argument('-o', '--output', type=str, default='output.csv',
                         help="Path to the output file")
-    parser.add_argument('--alpha', type=float, default=0.1,
+    parser.add_argument('--alpha', type=float, default=0.01,
                         help="Regularization rate")
     parser.add_argument('-ep', '--epochs', type=int, default=1000,
                         help='Number of maximum iterations')
