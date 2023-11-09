@@ -1,150 +1,191 @@
-# 6390Project1
+# IFT6390 Kaggle Competition 1: Climate Classification
 
-This Project contains two methods for first IFT6390 Kaggle competition.
+This project contains two methods for the first IFT6390 Kaggle competition,
+which aims to classify the weather situation based on time, location, and
+other features.
 
-- First method is a logistic regression model with L2 regularization developed
-from scratch.
-- Second method is a multi-layer perceptron model developed using scikit-learn.
+- The first method is a logistic regression model with L2 regularization
+developed from scratch.
+- The second method is a multi-layer perceptron model developed using
+SciKit-Learn.
 
-Both methods are implemented in Python 3.11. and need the following packages:
-- numpy
-- pandas
+Requirements
+Both methods are implemented in Python 3.11 and require the following packages:
+- NumPy
+- Pandas
 
-second method also need:
-- scikit-learn
+The second method also requires:
+- SciKit-Learn
+
+### Installation
+To install the project, you can clone this repository or download it as a zip
+file. Then, you can install the required packages using pip:
+```
+$ pip install -r requirements.txt
+```
+
+### Usage
+To run the models and generate predictions for the Kaggle competition,
+you can use one of the following files, based on the method you want to use.
 
 ## base.py
+This file contains the logistic regression model with L2 regularization
+developed from scratch. It has the following functions and classes:
 
-This file contains logistic regression model with L2 regularization developed
-from scratch. It contains the following functions and classes:
+- read_climate_data: This function reads the climate data from the csv file and
+returns a Pandas DataFrame. It also applies some preprocessing on the data.
+- LogisticRegression: This class implements the logistic regression model with
+L2 regularization. It has the following public methods:
+    - fit: This method trains the model on the given data and labels.
+    - predict: This method predicts the labels for the given data.
+    - validate: This method calculates the accuracy and loss of the model for
+    the given data and labels.
+- main: This function runs the model and prints the results using the arguments
+provided by the user.
 
-- read_climate_data
-    - This function reads the climate data from the csv file and returns
-    pandas dataframe.
-    - This function also apply some preprocessing on the data.
-- LogisticRegression
-    - This class implements logistic regression model with L2 regularization.
-    - This class contains the following functions:
-        - fit: This function trains the model.
-        - predict: This function predicts the labels for the given data.
-        - validate: This function calculates the accuracy and loss of the model for
-        the given data.
-- main
-    - This function using arguments run the model and prints the results.
-
-### How to run
-
-To run the model with default hyper-parameters using competition data, you need
-to run the following command in the terminal:
+To run the model with default hyperparameters using the competition data,
+you can use the following command in the terminal:
 ```
 $ python base.py path_to_train.csv path_to_test.csv -o path_to_output.csv
 ```
 
-You can also change regularization strength and maximum number of iterations
-using -rg and -ep arguments respectively. For example:
-```
-$ python base.py TRAIN_DATA TEST_DATA -rg 0.1 -ep 1000
-```
+You can also customize the following arguments:
 
-It is also possible to choose solver and scaler transformation using --solver
-and --scaler arguments respectively. For example:
-```
-$ python base.py TRAIN_DATA TEST_DATA --solver GradientDescent --scaler AbsMax
-```
-dummy and GradientDescent are the only available solvers and AbsMax and
-MinMax are the only available scalers.
+- -rg or --reg: This argument specifies the regularization strength.
+The default value is 0.2. For example:
+    ```
+    $ python base.py TRAIN_DATA TEST_DATA -rg 0.1
+    ```
 
-If you want to validate the model using my validation policy, you can use
---validate argument. In this case program shows validation accuracy and loss
-before training the model on the whole training data.
-For example:
-```
-$ python base.py TRAIN_DATA TEST_DATA --validate
-```
+- -ep or --epochs: This argument specifies the number of iterations for the
+solver. The default value is 400. For example:
+    ```
+    $ python base.py TRAIN_DATA TEST_DATA -ep 1000
+    ```
 
-It is also possible to use a pre-defined policy to chose regularization
-strength and maximum number of iterations, and use the best model to predict
-the labels for the test data. To do so, you need to use --hyperparameter_tuning
-or -hps argument. For example:
-```
-$ python base.py TRAIN_DATA TEST_DATA --hyperparameter_tuning
-```
+- --solver: This argument specifies the solver to use for the optimization.
+The available options are dummy and GradientDescent.
+The default option is dummy. For example:
+    ```
+    $ python base.py TRAIN_DATA TEST_DATA --solver GradientDescent
+    ```
 
-Using --print argument program prints some brief information during training
-and hyper-parameter tuning. For example:
-```
-$ python base.py TRAIN_DATA TEST_DATA --print
-```
+- --scaler: This argument specifies the scaler transformation to apply on the
+data. The available options are AbsMax and MinMax.
+The default option is AbsMax. For example:
+    ```
+    $ python base.py TRAIN_DATA TEST_DATA --scaler MinMax
+    ```
 
-For request a help message, you can use -h or --help argument. For example:
-```
-$ python base.py -h
-```
+- --validate: This argument enables the validation mode, which splits the
+training data into train and validation sets and evaluates the model on the
+validation set before training on the whole training data. For example:
+    ```
+    $ python base.py TRAIN_DATA TEST_DATA --validate
+    ```
+
+- --hyperparameter_tuning or -hps: This argument enables the hyperparameter
+tuning mode, which uses a pre-defined policy to choose the best regularization
+strength and number of epochs, and uses the best model to predict the labels
+for the test data. For example:
+    ```
+    $ python base.py TRAIN_DATA TEST_DATA --hyperparameter_tuning
+    ```
+
+- --print: This argument enables the print mode, which prints some brief
+information including the loss and accuracy during training and
+hyperparameter tuning. For example:
+    ```
+    $ python base.py TRAIN_DATA TEST_DATA --print
+    ```
+
+- -h or --help: This argument shows a help message with the description and
+usage of the arguments. For example:
+    ```
+    $ python base.py -h
+    ```
 
 ## advanced.py
+This file contains the multi-layer perceptron model developed using
+SciKit-Learn. It has the following functions:
 
-This file contains multi-layer perceptron model developed using scikit-learn.
-It contains the following functions and classes:
+- read_climate_data: This function reads the climate data from the csv file and
+returns a Pandas DataFrame. It also applies some preprocessing on the data.
+- main: This function runs the model and prints the results using the arguments
+provided by the user.
 
-- read_climate_data
-    - This function reads the climate data from the csv file and returns
-    pandas dataframe.
-    - This function also apply some preprocessing on the data.
-- main
-    - This function using arguments run the model and prints the results.
-
-### How to run
-
-Very similar to base.py file. To run the model with default hyper-parameters
-using competition data, you need to run the following command in the terminal:
+To run the model with default hyperparameters using the competition data,
+you can use the following command in the terminal:
 ```
 $ python advanced.py path_to_train.csv path_to_test.csv -o path_to_output.csv
 ```
 
-To specify the number of max iterations, and regularization strength, you can
-use -ep and --alpha arguments respectively. For example:
-```
-$ python advanced.py TRAIN_DATA TEST_DATA -ep 1000 --alpha 0.001
-```
+However, you can also customize the following arguments:
 
-For different solvers, and activation functions you can use --solver and
---activation arguments respectively. For example:
-```
-$ python advanced.py TRAIN_DATA TEST_DATA --solver lbfgs --activation tanh
-```
-only lbfgs, sgd, and adam are available solvers and identity, logistic, tanh,
-and relu are available activation functions.
+- -ep or --epochs: This argument specifies the maximum number of iterations for
+the solver. The default value is 1000. For example:
+    ```
+    $ python advanced.py TRAIN_DATA TEST_DATA -ep 200
+    ```
 
-If you want to validate the model using my validation policy before starting
-train on whole data and predict the labels for the test data, you can use
---validate argument. In this case program shows validation accuracy and loss
-before training the model on the whole training data.
-For example:
-```
-$ python advanced.py TRAIN_DATA TEST_DATA --validate
-```
+- --alpha: This argument specifies the regularization strength.
+The default value is 0.01. For example:
+    ```
+    $ python advanced.py TRAIN_DATA TEST_DATA --alpha 0.001
+    ```
 
-to specify size of hidden layers, you can use --layers argument. For
-example:
-```
-$ python advanced.py TRAIN_DATA TEST_DATA --layers 100 50 10
-```
+- --solver: This argument specifies the solver to use for the optimization.
+The available options are lbfgs, sgd, and adam.
+The default option is adam. For example:
+    ```
+    $ python advanced.py TRAIN_DATA TEST_DATA --solver sgd
+    ```
 
-It is also possible to use a pre-defined policy to chose regularization
-strength and model, and use the best model to predict the labels for the test
-data. To do so, you need to use --hyperparameter_tuning or -hps argument.
-For example:
-```
-$ python advanced.py TRAIN_DATA TEST_DATA --hyperparameter_tuning
-```
+- --activation: This argument specifies the activation function to use for the
+hidden layers. The available options are identity, logistic, tanh, and relu.
+The default option is relu. For example:
+    ```
+    $ python advanced.py TRAIN_DATA TEST_DATA --activation tanh
+    ```
 
-Using --print argument program prints some brief information during training
-and hyper-parameter tuning. For example:
-```
-$ python advanced.py TRAIN_DATA TEST_DATA --print
-```
+- --validate: This argument enables the validation mode, which splits the
+training data into train and validation sets and evaluates the model on the
+validation set before training on the whole training data. For example:
+    ```
+    $ python advanced.py TRAIN_DATA TEST_DATA --validate
+    ```
 
-For request a help message, you can use -h or --help argument. For example:
-```
-$ python advanced.py -h
-```
+- --layers: This argument specifies the size of the hidden layers.
+The default value is (4, 2). You have to provide in form of a tuple.
+like (100, 50, 10). For example:
+    ```
+    $ python advanced.py TRAIN_DATA TEST_DATA --layers (4, )
+    ```
+
+- --hyperparameter_tuning or -hps: This argument enables the hyperparameter
+tuning mode, which uses a pre-defined policy to choose the best regularization
+strength and hidden layer size, and uses the best model to predict the labels
+for the test data. For example:
+    ```
+    $ python advanced.py TRAIN_DATA TEST_DATA -hps
+    ```
+
+- --print: This argument enables the print mode, which prints some brief
+information during training and hyperparameter tuning. For example:
+    ```
+    $ python advanced.py TRAIN_DATA TEST_DATA --print
+    ```
+
+- -h or --help: This argument shows a help message with the description and
+usage of the arguments. For example:
+    ```
+    $ python advanced.py -h
+    ```
+
+## Acknowledgments
+This project, developed by Amin Darabi, is based on the first Kaggle
+competition of the IFT6390 course at the University of Montreal.
+The data and the problem description can be found on the [Kaggle page](https://www.kaggle.com/competitions/classification-of-extreme-weather-events-udem).
+The code is mainly inspired by the course's lectures and tutorials, with some
+additional references.
+References, algorithm details, and methodologies are found in the report.
